@@ -1,0 +1,31 @@
+#!/bin/bash
+
+commit_msg_file=$1
+
+allowed_prefixes=("build" "chore" "ci" "docs" "feat" "fix" "perf" "refactor" "revert" "style" "test" )
+
+allowed_prefixes_regex=$(IFS="|" ; echo "${allowed_prefixes[*]}")
+
+# comma separated list of allowed prefixes
+allowed_prefixes_string=$(printf ", %s" "${allowed_prefixes[@]}")
+allowed_prefixes_string=${allowed_prefixes_string:2}
+
+check_commit_message() {
+    local commit_msg="$1"
+    local pattern="^(${allowed_prefixes_regex})(\(.+\))?: .+"
+    if ! [[ $commit_msg =~ $pattern ]]; then
+        echo >&2 "Commit message must start with one of the following prefixes: ${allowed_prefixes_string}. Scope is optional."
+        return 1
+    fi
+    return 0
+}
+
+if [ ! -f "$commit_msg_file" ]; then
+    echo >&2 "Error: Commit message file '$commit_msg_file' not found."
+    exit 1
+fi
+
+commit_message=$(<$commit_msg_file)
+check_commit_message "$commit_message"
+
+exit $?
