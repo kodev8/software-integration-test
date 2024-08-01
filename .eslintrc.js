@@ -19,7 +19,9 @@ module.exports = {
         '**/*.json', // Ignore json
         'dist/',
         'build/',
-        '**/*.sql'
+        '**/*.sql',
+        '**/*.md',
+        '**/*.yml',
     ],
     plugins: ['@typescript-eslint', 'import'],
     rules: {
