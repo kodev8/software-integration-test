@@ -58,3 +58,20 @@ export const getMoviesByCategory = async (
         return [];
     }
 };
+
+export const getTopRatedMovies = async (
+    _req: Request,
+    res: Response
+): Promise<Response> => {
+    try {
+        const movies: QueryResult = await pool.query(
+            'SELECT * FROM movies ORDER BY rating DESC LIMIT 10;'
+        );
+        return res.status(statusCodes.success).json({ movies: movies.rows });
+    } catch (error) {
+        logger.error(error.stack);
+        return res.status(statusCodes.queryError).json({
+            error: 'Exception occured while fetching top rated movies',
+        });
+    }
+};
