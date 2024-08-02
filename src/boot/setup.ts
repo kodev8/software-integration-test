@@ -9,6 +9,7 @@ import session from 'express-session';
 //routes
 import authRoutes from '../routes/auth.routes';
 import moviesRoutes from '../routes/movies.routes';
+import usersRoutes from '../routes/users.routes';
 
 //middlewares
 import verifyToken from '../middleware/authentication';
@@ -68,6 +69,8 @@ export const registerCoreMiddleWare = (): Application => {
         app.use(helmet());
         app.use(validator);
         app.use(healthCeck);
+
+        app.use('/users', usersRoutes);
 
         app.use('/auth', authRoutes);
         app.use('/movies', verifyToken, moviesRoutes);
