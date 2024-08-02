@@ -3,6 +3,7 @@ import {
     getMovies,
     getMoviesByCategory,
     getTopRatedMovies,
+    getSeenMovies,
 } from '../../controllers/movies.controller';
 import type { UserRequest } from '../../types/customRequests.interface';
 import * as movieService from '../../controllers/movies.controller';
@@ -22,6 +23,7 @@ jest.mock('../../middleware/winston');
 import pool from '../../boot/database/db_connect';
 import statusCodes from '../../constants/statusCodes';
 import { mockUser1 } from '../users/users.mockData';
+import logger from '../../middleware/winston';
 
 describe('Movie Controller', () => {
     let req: Partial<UserRequest>;
@@ -176,6 +178,63 @@ describe('Movie Controller', () => {
             expect(res.json).toHaveBeenCalledWith({
                 error: 'Exception occured while fetching top rated movies',
             });
+        });
+    });
+
+    describe('getSeenMovies', () => {
+        it('should return seen movies for a user', async () => {
+            (pool.query as jest.Mock).mockResolvedValueOnce({
+                rows: mockMovies,
+            });
+
+            await getSeenMovies(req as Request, res as Response);
+
+            expect(pool.query).toHaveBeenCalledWith(
+                'SELECT * FROM seen_movies S JOIN movies M ON S.movie_id = M.movie_id WHERE email = $1;',
+                [mockUser1.email]
+            );
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ movies: mockMovies });
+        });
+
+        it('should return an empty array when there are no seen movies for a user', async () => {
+            (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+            await getSeenMovies(req as Request, res as Response);
+
+            expect(pool.query).toHaveBeenCalledWith(
+                'SELECT * FROM seen_movies S JOIN movies M ON S.movie_id = M.movie_id WHERE email = $1;',
+                [mockUser1.email]
+            );
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ movies: [] });
+        });
+
+        it('should return an error if no user is in the request object', async () => {
+            req.user = undefined;
+
+            await getSeenMovies(req as Request, res as Response);
+
+            expect(pool.query).not.toHaveBeenCalled();
+        });
+
+        it('should return an error when there is a database or unexpected error', async () => {
+            (pool.query as jest.Mock).mockRejectedValueOnce(
+                new Error('Database or unexpected error')
+            );
+
+            await getSeenMovies(req as Request, res as Response);
+
+            expect(pool.query).toHaveBeenCalledWith(
+                'SELECT * FROM seen_movies S JOIN movies M ON S.movie_id = M.movie_id WHERE email = $1;',
+                [mockUser1.email]
+            );
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Exception occured while fetching seen movies',
+            });
+
+            expect(logger.error).toHaveBeenCalledTimes(1);
         });
     });
 });
