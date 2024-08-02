@@ -12,6 +12,7 @@ import moviesRoutes from '../routes/movies.routes';
 import usersRoutes from '../routes/users.routes';
 import ratingRoutes from '../routes/rating.routes';
 import messagesRoutes from '../routes/messages.routes';
+import profileRoutes from '../routes/profile.routes';
 
 //middlewares
 import verifyToken from '../middleware/authentication';
@@ -78,6 +79,7 @@ export const registerCoreMiddleWare = (): Application => {
         app.use('/movies', verifyToken, moviesRoutes);
         app.use('/ratings', verifyToken, ratingRoutes);
         app.use('/messages', verifyToken, messagesRoutes);
+        app.use('/profile', verifyToken, profileRoutes);
 
         app.use(notFound);
 
