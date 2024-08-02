@@ -31,3 +31,11 @@ export interface AddRatingRequest extends UserRequest {
         rating?: number;
     };
 }
+
+// profile
+export interface EditPasswordRequest extends UserRequest {
+    body: {
+        oldPassword?: string;
+        newPassword?: string;
+    };
+}
