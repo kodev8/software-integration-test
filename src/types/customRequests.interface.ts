@@ -12,7 +12,6 @@ export interface RegisterRequest extends Request {
     body: IPGUser;
 }
 
-
 export interface LoginRequest extends Request {
     body: {
         email: string;
@@ -25,7 +24,6 @@ export interface UserRequest extends Request {
         email: string;
     };
 }
-
 
 // rating
 export interface AddRatingRequest extends UserRequest {
