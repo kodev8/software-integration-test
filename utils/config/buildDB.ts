@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { mockMovies } from '../../src/tests/movies/movies.mockData';
 import logger from '../../src/middleware/winston';
 import mongoose from 'mongoose';
+import commentModel from '../../src/models/commentModel';
+import { mockComments } from '../../src/tests/comments/comments.mockData';
 import messageModel from '../../src/models/messageModel';
 import ratingModel from '../../src/models/ratingModel';
 import { Client, ClientConfig } from 'pg';
@@ -18,6 +20,7 @@ interface IExpectedBuildDB {
     messages?: boolean;
     movies?: boolean;
     ratings?: boolean;
+    comments?: boolean;
 }
 
 const clearSchema = async (
@@ -96,6 +99,7 @@ export const buildDB = async ({
     messages = false,
     movies = false,
     ratings = false,
+    comments = false,
 }: IExpectedBuildDB): Promise<void> => {
     await createDB();
     await pool.query(sql);
@@ -193,6 +197,15 @@ export const buildDB = async ({
         await ratingModel.deleteMany({});
         await ratingModel.insertMany(mockRatings);
     }
+
+    // COMMENTS MODEL
+    if (comments) {
+        // clear comments table
+        await commentModel.deleteMany({});
+        await commentModel.insertMany(mockComments);
+    }
+
+    logger.info('Test Database built successfully');
 };
 
 const cleanModels = async (): Promise<void> => {
