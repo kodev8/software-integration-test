@@ -8,9 +8,10 @@ import session from 'express-session';
 
 //routes
 import authRoutes from '../routes/auth.routes';
+import moviesRoutes from '../routes/movies.routes';
 
 //middlewares
-// import verifyToken from '../middleware/authentication';
+import verifyToken from '../middleware/authentication';
 import validator from '../middleware/validator';
 import healthCeck from '../middleware/healthCheck';
 import notFound from '../middleware/notFound';
@@ -60,6 +61,7 @@ export const registerCoreMiddleWare = (): Application => {
         app.use(healthCeck);
 
         app.use('/auth', authRoutes);
+        app.use('/movies', verifyToken, moviesRoutes);
 
         app.use(notFound);
 
