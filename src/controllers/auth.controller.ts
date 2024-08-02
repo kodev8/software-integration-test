@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import userModel, { IUserDocument } from '../models/userModel';
+import { Request, Response } from 'express';
+import userModel, { IUser, IUserDocument } from '../models/userModel';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 // import { Session, SessionData } from 'express-session';
@@ -78,7 +78,37 @@ const signin = async (req: AuthRequest, res: Response): Promise<Response> => {
     }
 };
 
+const getUser = async (req: Request, res: Response): Promise<Response> => {
+    if (!req.session.user) {
+        return res
+            .status(statusCodes.unauthorized)
+            .json({ error: 'You are not authenticated' });
+    }
+
+    try {
+        const user: IUser | null = await userModel
+            .findById(req.session.user._id, {
+                password: 0,
+            })
+            .populate('messages');
+
+        if (!user) {
+            return res
+                .status(statusCodes.badRequest)
+                .json({ message: 'User not found' });
+        }
+
+        return res.status(statusCodes.success).json(user);
+    } catch (error) {
+        logger.error('Error while getting user from DB', error.message);
+        return res
+            .status(statusCodes.queryError)
+            .json({ error: 'Failed to get user' });
+    }
+};
+
 export default {
     signup,
     signin,
+    getUser,
 };
