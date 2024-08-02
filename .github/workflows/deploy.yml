@@ -52,7 +52,7 @@ jobs:
                   touch .env
                   echo "${{ secrets.TEST }}" > .env
             - name: Lint
-              run: npm run lint
+              run: npm run lint:fix
             - name: Test
               run: npm run test
 

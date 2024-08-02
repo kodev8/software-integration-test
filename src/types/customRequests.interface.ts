@@ -31,3 +31,27 @@ export interface AddRatingRequest extends UserRequest {
         rating?: number;
     };
 }
+
+// messages
+export interface MessageRequest extends Request {
+    params: {
+        messageId?: string;
+    };
+}
+
+export interface AddMessageRequest extends Request {
+    body: {
+        message: {
+            name: string;
+        };
+    };
+}
+
+export interface EditMessageRequest extends Request {
+    params: {
+        messageId: string;
+    };
+    body: {
+        name: string;
+    };
+}
