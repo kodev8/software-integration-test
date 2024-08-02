@@ -1,0 +1,48 @@
+import { stableUser1, stableUser2 } from '../../src/tests/users/users.mockData';
+import bcrypt from 'bcryptjs';
+import logger from '../../src/middleware/winston';
+import mongoose from 'mongoose';
+
+import userModel, { IUserDocument } from '../../src/models/userModel';
+
+interface IExpectedBuildDB {
+    users?: boolean;
+}
+
+export const buildDB = async ({
+    users = false,
+}: IExpectedBuildDB): Promise<void> => {
+    if (users) {
+        const stableUsers = [stableUser1, stableUser2];
+        const users: IUserDocument[] = [];
+        await userModel.deleteMany({});
+        for (const user of stableUsers) {
+            const userObj = new userModel({
+                email: user.email,
+                username: user.username,
+                password: bcrypt.hashSync(user.password, 10),
+                creation_date: user.creation_date,
+            });
+
+            const newUser = await userObj.save();
+            users.push(newUser);
+        }
+    }
+};
+
+export const teardownConnections = async (): Promise<void> => {
+    try {
+        await cleanModels();
+        mongoose.connection.close();
+    } catch (error) {
+        logger.error(error.stack);
+    }
+};
+
+const cleanModels = async (): Promise<void> => {
+    try {
+        await userModel.deleteMany({});
+    } catch (error) {
+        logger.error(error.stack);
+    }
+};
