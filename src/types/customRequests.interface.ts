@@ -55,3 +55,11 @@ export interface EditMessageRequest extends Request {
         name: string;
     };
 }
+
+// profile
+export interface EditPasswordRequest extends UserRequest {
+    body: {
+        oldPassword?: string;
+        newPassword?: string;
+    };
+}
