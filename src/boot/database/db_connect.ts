@@ -12,6 +12,12 @@ const db_config: PoolConfig = {
     port: 5432,
 };
 
+if (process.env.NODE_ENV === 'test') {
+    db_config.ssl = {
+        rejectUnauthorized: false,
+    };
+}
+
 let db_connection: Pool;
 function startConnection(): void {
     // type parsers here
