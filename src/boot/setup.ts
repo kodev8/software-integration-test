@@ -9,6 +9,7 @@ import session from 'express-session';
 //routes
 import authRoutes from '../routes/auth.routes';
 import moviesRoutes from '../routes/movies.routes';
+import ratingRoutes from '../routes/rating.routes';
 
 //middlewares
 import verifyToken from '../middleware/authentication';
@@ -71,6 +72,7 @@ export const registerCoreMiddleWare = (): Application => {
 
         app.use('/auth', authRoutes);
         app.use('/movies', verifyToken, moviesRoutes);
+        app.use('/ratings', verifyToken, ratingRoutes);
 
         app.use(notFound);
 

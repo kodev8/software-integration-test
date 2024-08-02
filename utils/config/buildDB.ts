@@ -4,10 +4,12 @@ import { mockMovies } from '../../src/tests/movies/movies.mockData';
 import logger from '../../src/middleware/winston';
 import mongoose from 'mongoose';
 import messageModel from '../../src/models/messageModel';
+import ratingModel from '../../src/models/ratingModel';
 import { Client, ClientConfig } from 'pg';
 import userModel, { IUserDocument } from '../../src/models/userModel';
 import * as fs from 'fs';
 import path from 'path';
+import { ratings as mockRatings } from '../../src/tests/rating/rating.mockData';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -15,6 +17,7 @@ interface IExpectedBuildDB {
     users?: boolean;
     messages?: boolean;
     movies?: boolean;
+    ratings?: boolean;
 }
 
 const clearSchema = async (
@@ -92,6 +95,7 @@ export const buildDB = async ({
     users = false,
     messages = false,
     movies = false,
+    ratings = false,
 }: IExpectedBuildDB): Promise<void> => {
     await createDB();
     await pool.query(sql);
@@ -182,6 +186,12 @@ export const buildDB = async ({
                 }
             }
         }
+    }
+
+    // RATINGS MODEL
+    if (ratings) {
+        await ratingModel.deleteMany({});
+        await ratingModel.insertMany(mockRatings);
     }
 };
 
