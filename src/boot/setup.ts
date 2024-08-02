@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import logger, { stream } from '../middleware/winston';
 
+//middlewares
+// import verifyToken from '../middleware/authentication';
+
 import dotenv from 'dotenv';
 dotenv.config();
 
