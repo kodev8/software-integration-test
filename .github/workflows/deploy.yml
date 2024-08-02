@@ -1,5 +1,5 @@
 name: Deploy Workflow
-run-name: ${{ github.actor }} is deployment
+run-name: ${{ github.actor }} is deploying
 
 on:
     pull_request:
@@ -78,13 +78,13 @@ jobs:
 
                   git_branch_env=${{ needs.check-branch.outputs.BRANCH_ENV}}
                   if [ $git_branch_env == "prod" ]; then
-                      SECRETS=${{ secrets.PROD }}
+                      SECRETS="${{ secrets.PROD }}"
                   elif [ $git_branch_env == "preprod" ]; then
-                      SECRETS=${{ secrets.PREPROD }}
+                      SECRETS="${{ secrets.PREPROD }}"
                   elif [ $git_branch_env == "dev" ]; then
-                      SECRETS=${{ secrets.DEV }}
+                      SECRETS="${{ secrets.DEV }}"
                   elif [ $git_branch_env == "release" ]; then
-                      SECRETS=${{ secrets.RELEASE }}
+                      SECRETS="${{ secrets.RELEASE }}"
                   fi
                   echo "$SECRETS" > .env
 
