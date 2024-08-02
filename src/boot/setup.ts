@@ -3,6 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import logger, { stream } from '../middleware/winston';
+import mongoose from 'mongoose';
+import session from 'express-session';
+
+//routes
+import authRoutes from '../routes/auth.routes';
 
 //middlewares
 // import verifyToken from '../middleware/authentication';
@@ -15,14 +20,47 @@ dotenv.config();
 
 const PORT = process.env.PORT || 8080;
 const app = express();
+
+try {
+    mongoose.connect(process.env.MONGO_URI);
+    logger.info('MongoDB Connected');
+} catch (error) {
+    logger.error('Error connecting to DB' + error);
+}
+
+// for nodemon
+declare module 'express-session' {
+    export interface SessionData {
+        user: {
+            email?: string;
+            _id?: string;
+        };
+    }
+}
+
 export const registerCoreMiddleWare = (): Application => {
     try {
+        app.use(
+            session({
+                secret: process.env.SESSION_SECRET,
+                resave: false,
+                saveUninitialized: true,
+                cookie: {
+                    secure: false,
+                    httpOnly: true,
+                },
+            })
+        );
+
         app.use(morgan('combined', { stream }));
         app.use(express.json());
         app.use(cors());
         app.use(helmet());
         app.use(validator);
         app.use(healthCeck);
+
+        app.use('/auth', authRoutes);
+
         app.use(notFound);
 
         logger.http('Done registering all middlewares');
