@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import {
     getMovies,
     getMoviesByCategory,
+    getTopRatedMovies,
 } from '../../controllers/movies.controller';
 import type { UserRequest } from '../../types/customRequests.interface';
 import * as movieService from '../../controllers/movies.controller';
@@ -140,6 +141,41 @@ describe('Movie Controller', () => {
             expect(pool.query).toHaveBeenCalledTimes(1);
 
             expect(result).toEqual([]);
+        });
+    });
+
+    describe('getTopRatedMovies', () => {
+        it('should return top rated movies', async () => {
+            (pool.query as jest.Mock).mockResolvedValueOnce({
+                rows: mockMovies,
+            });
+
+            await getTopRatedMovies(req as Request, res as Response);
+
+            expect(pool.query).toHaveBeenCalledWith(
+                'SELECT * FROM movies ORDER BY rating DESC LIMIT 10;'
+            );
+            expect(pool.query).toHaveBeenCalledTimes(1);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ movies: mockMovies });
+        });
+
+        it('should return an error when there is a database or unexpected error', async () => {
+            (pool.query as jest.Mock).mockRejectedValueOnce(
+                new Error('Database or unexpected error')
+            );
+
+            await getTopRatedMovies(req as Request, res as Response);
+
+            expect(pool.query).toHaveBeenCalledWith(
+                'SELECT * FROM movies ORDER BY rating DESC LIMIT 10;'
+            );
+            expect(pool.query).toHaveBeenCalledTimes(1);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Exception occured while fetching top rated movies',
+            });
         });
     });
 });
