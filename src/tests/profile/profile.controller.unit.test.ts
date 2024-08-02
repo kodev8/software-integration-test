@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { editPassword } from '../../controllers/profile.controller';
+import { editPassword, logout } from '../../controllers/profile.controller';
 import logger from '../../middleware/winston';
 import statusCodes from '../../constants/statusCodes';
 import { Session, SessionData } from 'express-session';
@@ -165,6 +165,18 @@ describe('Profile Controller', () => {
             expect(res.json).toHaveBeenCalledWith({
                 message: 'Incorrect password',
             });
+        });
+    });
+
+    describe('logout', () => {
+        it('should clear the user session and return disconnected message', async () => {
+            req.session = { user: { email: mockUser1.email } } as Session &
+                SessionData;
+            await logout(req as UserRequest, res as Response);
+
+            expect(req.session.user).toBeUndefined();
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Disconnected' });
         });
     });
 });

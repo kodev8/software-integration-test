@@ -141,4 +141,15 @@ describe('Profile Routes Integration Tests', () => {
             });
         });
     });
+
+    describe('POST /profile', () => {
+        it('should logout the user and clear the session', async () => {
+            const response = await request(app)
+                .post('/profile')
+                .set('Authorization', `Bearer ${testToken}`); // Ensure a session is established first in the test setup
+
+            expect(response.status).toBe(statusCodes.success);
+            expect(response.body).toEqual({ message: 'Disconnected' });
+        });
+    });
 });
