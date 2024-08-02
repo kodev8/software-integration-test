@@ -1,6 +1,8 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import morgan from 'morgan';
+import logger, { stream } from '../middleware/winston';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -8,7 +10,7 @@ dotenv.config();
 const PORT = process.env.PORT || 8080;
 const app = express();
 export const registerCoreMiddleWare = (): Application => {
-    // TODO
+    app.use(morgan('combined', { stream }));
     app.use(express.json());
     app.use(cors());
     app.use(helmet());
@@ -17,16 +19,30 @@ export const registerCoreMiddleWare = (): Application => {
 };
 
 const handleError = (): void => {
-    // TODO
+    process.on('uncaughtException', (err) => {
+        logger.error(
+            `UNCAUGHT_EXCEPTION OCCURED : ${JSON.stringify(err.stack)}`
+        );
+    });
 };
 
 export const startApp = (): void => {
     // register core application level middleware
     registerCoreMiddleWare();
-
-    app.listen(PORT, () => {
-        // TODO
-    });
+    try {
+        app.listen(PORT, () => {
+            logger.info('Listening on 127.0.0.1:' + PORT);
+        });
+    } catch (err) {
+        logger.error(
+            `startup :: Error while booting the applicaiton ${JSON.stringify(
+                err,
+                undefined,
+                2
+            )}`
+        );
+        throw err;
+    }
 
     // exit on uncaught exception
     handleError();
