@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import logger from './middleware/winston';
 dotenv.config();
 import { startApp } from './boot/setup';
 
@@ -6,6 +7,7 @@ import { startApp } from './boot/setup';
     try {
         startApp();
     } catch (error) {
-        // TODO
+        logger.error('Error in index.ts => startApp');
+        logger.error(`Error; ${JSON.stringify(error, undefined, 2)}`);
     }
 })();
