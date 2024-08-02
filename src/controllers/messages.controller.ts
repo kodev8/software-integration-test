@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import messageModel, { IMessage } from '../models/messageModel';
-import { AddMessageRequest } from '../types/customRequests.interface';
+import {
+    AddMessageRequest,
+    EditMessageRequest,
+} from '../types/customRequests.interface';
 import statusCodes from '../constants/statusCodes';
 import logger from '../middleware/winston';
 
@@ -43,4 +46,32 @@ const addMessage = async (
     }
 };
 
-export { getMessages, addMessage };
+const editMessage = async (
+    req: EditMessageRequest,
+    res: Response
+): Promise<Response> => {
+    const { messageId } = req.params;
+    const { name } = req.body;
+
+    if (!name || !messageId)
+        return res
+            .status(statusCodes.badRequest)
+            .json({ error: 'missing information' });
+
+    try {
+        const editMessage: IMessage = await messageModel.findByIdAndUpdate(
+            messageId,
+            { name },
+            { new: true }
+        );
+
+        return res.status(statusCodes.success).json(editMessage);
+    } catch (error) {
+        logger.error(error.stack);
+        return res
+            .status(statusCodes.queryError)
+            .json({ error: 'Failed to update message' });
+    }
+};
+
+export { getMessages, addMessage, editMessage };

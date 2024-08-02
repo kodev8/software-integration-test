@@ -53,3 +53,12 @@ export interface AddMessageRequest extends Request {
         };
     };
 }
+
+export interface EditMessageRequest extends Request {
+    params: {
+        messageId: string;
+    };
+    body: {
+        name: string;
+    };
+}
