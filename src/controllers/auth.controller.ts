@@ -107,8 +107,16 @@ const getUser = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
+const logout = (req: Request, res: Response): Response => {
+    if (req.session.user) {
+        delete req.session.user;
+    }
+    return res.status(statusCodes.success).json({ message: 'Disconnected' });
+};
+
 export default {
     signup,
     signin,
     getUser,
+    logout,
 };

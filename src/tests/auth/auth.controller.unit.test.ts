@@ -274,4 +274,24 @@ describe('Auth Controller', () => {
             expect(res.json).toHaveBeenCalledWith(mockUser);
         });
     });
+
+    describe('logout', () => {
+        it('should return 200 and destroy session', () => {
+            req.session.user = {
+                _id: 'testing',
+            };
+
+            authController.logout(req as AuthRequest, res as Response);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Disconnected' });
+            expect(req.session.user).toBeUndefined();
+        });
+
+        it('should return 200 when no user in session', () => {
+            authController.logout(req as AuthRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Disconnected' });
+        });
+    });
 });

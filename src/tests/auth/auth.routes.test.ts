@@ -193,4 +193,19 @@ describe('Auth Routes', () => {
             });
         });
     });
+
+    describe('POST /logout', () => {
+        it('should return 200 and destroy session', async () => {
+            // await request(app).post('/auth/signup').send(testUserSignup);
+            const loginRes = await request(app)
+                .post('/auth/login')
+                .send(mockUser1);
+            const cookies = loginRes.headers['set-cookie'];
+            const res = await request(app)
+                .get('/auth/logout')
+                .set('Cookie', cookies?.[0]);
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual({ message: 'Disconnected' });
+        });
+    });
 });
