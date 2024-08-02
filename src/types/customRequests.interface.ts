@@ -1,17 +1,14 @@
 import { Request } from 'express';
 import { IPGUser } from './pguser.interface';
 
-export interface UserRequest extends Request {
-    user?: {
-        email: string;
-    };
-}
+// auth
 export interface AuthRequest extends Request {
     username?: string;
     email: string;
     password: string;
 }
 
+// uses
 export interface RegisterRequest extends Request {
     body: IPGUser;
 }
@@ -22,6 +19,21 @@ export interface LoginRequest extends Request {
         password: string;
     };
 }
+
+export interface UserRequest extends Request {
+    user?: {
+        email: string;
+    };
+}
+
+// profile
+export interface EditPasswordRequest extends UserRequest {
+    body: {
+        oldPassword?: string;
+        newPassword?: string;
+    };
+}
+
 // rating
 export interface AddRatingRequest extends UserRequest {
     params: {
@@ -56,10 +68,15 @@ export interface EditMessageRequest extends Request {
     };
 }
 
-// profile
-export interface EditPasswordRequest extends UserRequest {
+// comments
+export interface CommentRequest extends Request {
+    params: {
+        movie_id?: string;
+    };
     body: {
-        oldPassword?: string;
-        newPassword?: string;
+        rating?: number;
+        username?: string;
+        comment?: string;
+        title?: string;
     };
 }
