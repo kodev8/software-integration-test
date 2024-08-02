@@ -177,4 +177,31 @@ describe('Message Routes', () => {
             expect(logger.error).toHaveBeenCalled();
         });
     });
+
+    describe('DELETE /messages/:messageId', () => {
+        it('should delete message by id', async () => {
+            const res = await request(app)
+                .delete(`/messages/delete/${instertedMessages[0]._id}`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual({ message: 'Message deleted' });
+        });
+
+        it('should return 200 even if message is not found (valid object id)', async () => {
+            const res = await request(app)
+                .delete(`/messages/delete/66aa2eb4379d1bb76128df00`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual({ message: 'Message deleted' });
+        });
+
+        it('should return 500 if message not found (invalid object id)', async () => {
+            const res = await request(app)
+                .delete(`/messages/delete/123`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.queryError);
+            expect(res.body).toEqual({ error: 'Failed to delete message' });
+            expect(logger.error).toHaveBeenCalled();
+        });
+    });
 });
