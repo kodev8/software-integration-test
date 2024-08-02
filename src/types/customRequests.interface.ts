@@ -45,6 +45,11 @@ export interface AddRatingRequest extends UserRequest {
 }
 
 // messages
+export interface MessageRequest extends Request {
+    params: {
+        messageId?: string;
+    };
+}
 
 export interface AddMessageRequest extends Request {
     body: {

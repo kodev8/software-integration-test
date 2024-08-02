@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import messageModel, { IMessage } from '../models/messageModel';
 import {
+    MessageRequest,
     AddMessageRequest,
     EditMessageRequest,
 } from '../types/customRequests.interface';
@@ -74,4 +75,28 @@ const editMessage = async (
     }
 };
 
-export { getMessages, addMessage, editMessage };
+const deleteMessage = async (
+    req: MessageRequest,
+    res: Response
+): Promise<Response> => {
+    const { messageId } = req.params;
+
+    if (!messageId)
+        return res
+            .status(statusCodes.badRequest)
+            .json({ error: 'missing information' });
+
+    try {
+        await messageModel.findByIdAndDelete(messageId);
+        return res
+            .status(statusCodes.success)
+            .json({ message: 'Message deleted' });
+    } catch (error) {
+        logger.error(error.stack);
+        return res
+            .status(statusCodes.queryError)
+            .json({ error: 'Failed to delete message' });
+    }
+};
+
+export { getMessages, addMessage, editMessage, deleteMessage };
