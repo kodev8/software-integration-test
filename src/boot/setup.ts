@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import logger, { stream } from '../middleware/winston';
 import mongoose from 'mongoose';
+import session from 'express-session';
 
 //routes
 import authRoutes from '../routes/auth.routes';
@@ -27,8 +28,30 @@ try {
     logger.error('Error connecting to DB' + error);
 }
 
+// for nodemon
+declare module 'express-session' {
+    export interface SessionData {
+        user: {
+            email?: string;
+            _id?: string;
+        };
+    }
+}
+
 export const registerCoreMiddleWare = (): Application => {
     try {
+        app.use(
+            session({
+                secret: process.env.SESSION_SECRET,
+                resave: false,
+                saveUninitialized: true,
+                cookie: {
+                    secure: false,
+                    httpOnly: true,
+                },
+            })
+        );
+
         app.use(morgan('combined', { stream }));
         app.use(express.json());
         app.use(cors());
