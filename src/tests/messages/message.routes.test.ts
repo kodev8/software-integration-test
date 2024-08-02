@@ -111,6 +111,43 @@ describe('Message Routes', () => {
         });
     });
 
+    describe('GET /messages (all)', () => {
+        it('should return all messages', async () => {
+            const res = await request(app)
+                .get('/messages')
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body.length).toBe(3);
+            expect(res.body).toEqual(expect.arrayContaining(instertedMessages));
+        });
+    });
+
+    describe('GET /messages/:messageId', () => {
+        it('should return message by id', async () => {
+            const res = await request(app)
+                .get(`/messages/${instertedMessages[0]._id}`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual(instertedMessages[0]);
+        });
+
+        it('should return 404 if message not found (valid object id)', async () => {
+            const res = await request(app)
+                .get(`/messages/66aa2eb4379d1bb76128df00`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.notFound);
+            expect(res.body).toEqual({ error: 'Message not found' });
+        });
+
+        it('should return 500 if message not found (invalid object id)', async () => {
+            const res = await request(app)
+                .get(`/messages/123`)
+                .set('Authorization', `Bearer ${testToken}`);
+            expect(res.status).toBe(statusCodes.queryError);
+            expect(res.body).toEqual({ error: 'Error while getting message' });
+        });
+    });
+
     describe('PUT /messages/:messageId', () => {
         it('should edit message by id', async () => {
             const res = await request(app)
