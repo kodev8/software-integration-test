@@ -40,6 +40,15 @@ declare module 'express-session' {
     }
 }
 
+declare module 'jsonwebtoken' {
+    export interface UserJwtPayload {
+        user: {
+            email: string;
+            id: string;
+        };
+    }
+}
+
 export const registerCoreMiddleWare = (): Application => {
     try {
         app.use(
