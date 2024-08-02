@@ -12,6 +12,7 @@ import {
     getTopRatedMovies,
     lowestRatedMovie,
     mockMovies,
+    getSeenMovies,
 } from './movies.mockData';
 
 import { registerCoreMiddleWare } from '../../boot/setup';
@@ -184,6 +185,45 @@ describe('Movies Routes', () => {
             expect(response.body).toEqual({
                 error: 'Exception occured while fetching top rated movies',
             });
+        });
+    });
+
+    describe('GET /movies/me', () => {
+        it('should return seen movies for a user', async () => {
+            const response = await request(app)
+                .get('/movies/me')
+                .set('Authorization', `Bearer ${testToken}`);
+
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM seen_movies S JOIN movies M ON S.movie_id = M.movie_id WHERE email = $1;',
+                [stableUser1.email]
+            );
+            expect(response.status).toBe(statusCodes.success);
+
+            stableUser1.user_id = 1;
+            const seenMovies = getSeenMovies(stableUser1);
+
+            expect(response.body).toHaveProperty('movies');
+            expect(getMoviesSortedByMovieId(response.body.movies)).toEqual(
+                getMoviesSortedByMovieId(seenMovies)
+            );
+            expect(getMoviesSortedByMovieId(response.body.movies)).toEqual(
+                getMoviesSortedByMovieId(seenMovies)
+            );
+        });
+
+        it('should return an error when there is a database / unexpected error', async () => {
+            (logger.error as jest.Mock).mockImplementationOnce(() => {});
+            poolQuerySpy.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app)
+                .get('/movies/me')
+                .set('Authorization', `Bearer ${testToken}`);
+
+            expect(response.status).toBe(statusCodes.queryError);
+            expect(response.body).toEqual({
+                error: 'Exception occured while fetching seen movies',
+            });
+            expect(logger.error).toHaveBeenCalled();
         });
     });
 });
