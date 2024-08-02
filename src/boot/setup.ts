@@ -8,6 +8,7 @@ import logger, { stream } from '../middleware/winston';
 // import verifyToken from '../middleware/authentication';
 import validator from '../middleware/validator';
 import healthCeck from '../middleware/healthCheck';
+import notFound from '../middleware/notFound';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -22,6 +23,7 @@ export const registerCoreMiddleWare = (): Application => {
         app.use(helmet());
         app.use(validator);
         app.use(healthCeck);
+        app.use(notFound);
 
         logger.http('Done registering all middlewares');
         return app;
