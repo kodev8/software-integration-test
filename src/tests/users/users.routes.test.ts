@@ -6,15 +6,20 @@ import { mockUser1, mockUser2, stableUser1 } from './users.mockData';
 import logger from '../../middleware/winston';
 import statusCodes from '../../constants/statusCodes';
 import pool from '../../boot/database/db_connect';
+import jwt from 'jsonwebtoken';
 
 describe('Users Routes Integration Tests', () => {
     let app: Application;
+    let poolQuerySpy: jest.SpyInstance;
     let poolConnectSpy: jest.SpyInstance;
     let clientQuerySpy: jest.SpyInstance;
-
+    let jwtSignSpy: jest.SpyInstance;
     beforeAll(async () => {
         await buildDB({ users: true });
         app = registerCoreMiddleWare();
+
+        poolQuerySpy = jest.spyOn(pool, 'query');
+        jwtSignSpy = jest.spyOn(jwt, 'sign');
     });
 
     beforeEach(async () => {
@@ -206,6 +211,123 @@ describe('Users Routes Integration Tests', () => {
             expect(response.body).toEqual({
                 message: 'Exception occurred while registering',
             });
+        });
+    });
+
+    describe('POST /users/login', () => {
+        it('POST /users/login shoul log in stable user from db build', async () => {
+            const response = await request(app).post('/users/login').send({
+                email: stableUser1.email,
+                password: stableUser1.password,
+            });
+
+            expect(poolQuerySpy).toHaveBeenCalledTimes(1);
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM users WHERE email = $1 AND password = crypt($2, password);',
+                [stableUser1.email, stableUser1.password],
+                expect.any(Function)
+            );
+
+            expect(response.status).toBe(statusCodes.success);
+            expect(response.body).toHaveProperty('token');
+            expect(response.body).toHaveProperty('username');
+
+            expect(response.body.username).toEqual(stableUser1.username);
+
+            const decoded = <jwt.UserJwtPayload>jwt.decode(response.body.token);
+
+            expect(decoded).toHaveProperty('user');
+            expect(decoded.user).toHaveProperty('email', stableUser1.email);
+
+            expect(jwtSignSpy).toHaveBeenCalledTimes(1);
+            expect(jwtSignSpy).toHaveBeenCalledWith(
+                { user: { email: stableUser1.email } },
+                process.env.JWT_SECRET_KEY as string,
+                { expiresIn: '1h' }
+            );
+        });
+
+        it('POST /users/login should successfully log in the recently added user', async () => {
+            const response = await request(app).post('/users/login').send({
+                email: mockUser1.email,
+                password: mockUser1.password,
+            });
+
+            expect(poolQuerySpy).toHaveBeenCalledTimes(1);
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM users WHERE email = $1 AND password = crypt($2, password);',
+                [mockUser1.email, mockUser1.password],
+                expect.any(Function)
+            );
+
+            expect(response.status).toBe(statusCodes.success);
+            expect(response.body).toHaveProperty('token');
+            expect(response.body).toHaveProperty('username');
+
+            expect(response.body.username).toEqual(mockUser1.username);
+
+            const decoded = <jwt.UserJwtPayload>jwt.decode(response.body.token);
+
+            expect(decoded).toHaveProperty('user');
+            expect(decoded.user).toHaveProperty('email', mockUser1.email);
+
+            expect(jwtSignSpy).toHaveBeenCalledTimes(1);
+            expect(jwtSignSpy).toHaveBeenCalledWith(
+                { user: { email: mockUser1.email } },
+                process.env.JWT_SECRET_KEY as string,
+                { expiresIn: '1h' }
+            );
+        });
+
+        it('should return a 400 error if missing parameters', async () => {
+            const response = await request(app).post('/users/login').send();
+
+            expect(response.status).toBe(statusCodes.badRequest);
+            expect(response.body).toEqual({ message: 'Missing parameters' });
+        });
+
+        it('should return a 404 error if user is not found', async () => {
+            const response = await request(app).post('/users/login').send({
+                email: 'notemail',
+                password: 'notpassword',
+            });
+
+            expect(response.status).toBe(statusCodes.notFound);
+            expect(response.body).toEqual({
+                message: 'Incorrect email/password',
+            });
+
+            expect(poolQuerySpy).toHaveBeenCalledTimes(1);
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM users WHERE email = $1 AND password = crypt($2, password);',
+                ['notemail', 'notpassword'],
+                expect.any(Function)
+            );
+            expect(jwtSignSpy).not.toHaveBeenCalled();
+        });
+
+        it('should return error if database query fails', async () => {
+            poolQuerySpy.mockImplementationOnce((_query, _values, callback) => {
+                callback(new Error('Database error'), null);
+            });
+
+            const response = await request(app).post('/users/login').send({
+                email: 'notemail',
+                password: 'notpassword',
+            });
+
+            expect(response.status).toBe(statusCodes.queryError);
+            expect(response.body).toEqual({
+                error: 'Exception occurred while logging in',
+            });
+
+            expect(poolQuerySpy).toHaveBeenCalledTimes(1);
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM users WHERE email = $1 AND password = crypt($2, password);',
+                ['notemail', 'notpassword'],
+                expect.any(Function)
+            );
+            expect(jwtSignSpy).not.toHaveBeenCalled();
         });
     });
 });

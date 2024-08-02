@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { register } from '../../controllers/users.controller';
-
+import { register, login } from '../../controllers/users.controller';
+import jwt from 'jsonwebtoken';
 import statusCodes from '../../constants/statusCodes';
 
 jest.mock('../../boot/database/db_connect', () => ({
@@ -195,6 +195,83 @@ describe('User Controller', () => {
             expect(logger.error).toHaveBeenCalledTimes(1);
 
             expect(client.release).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('login', () => {
+        it('should return 400 if email or password is missing', async () => {
+            await login(req as Request, res as Response);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'Missing parameters',
+            });
+            expect(pool.query).not.toHaveBeenCalled();
+        });
+
+        it('should return 500 on query error', async () => {
+            req.body = { email: 'test@test.com', password: '1234' };
+
+            (pool.query as jest.Mock).mockImplementation(
+                (_query, _params, callback) => {
+                    callback(new Error('Query error'), null);
+                }
+            );
+
+            await login(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Exception occurred while logging in',
+            });
+        });
+
+        it('should return 404 if email or password is incorrect', async () => {
+            req.body = mockUser1;
+
+            (pool.query as jest.Mock).mockImplementation(
+                (_query, _params, callback) => {
+                    callback(null, { rows: [] });
+                }
+            );
+
+            await login(req as Request, res as Response);
+            (jwt.sign as jest.Mock).mockReturnValue('fakeToken');
+            expect(jwt.sign).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(statusCodes.notFound);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'Incorrect email/password',
+            });
+        });
+
+        it('should return 200 and a token if email and password are correct', async () => {
+            req.body = mockUser1;
+            (pool.query as jest.Mock).mockImplementation(
+                (_query, _params, callback) => {
+                    callback(null, {
+                        rows: [
+                            {
+                                email: mockUser1.email,
+                                username: mockUser1.username,
+                            },
+                        ],
+                    });
+                }
+            );
+
+            (jwt.sign as jest.Mock).mockReturnValue('fakeToken');
+
+            await login(req as Request, res as Response);
+
+            expect(jwt.sign).toHaveBeenCalledWith(
+                { user: { email: mockUser1.email } },
+                process.env.JWT_SECRET_KEY as string,
+                { expiresIn: '1h' }
+            );
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({
+                token: 'fakeToken',
+                username: mockUser1.username,
+            });
         });
     });
 });
