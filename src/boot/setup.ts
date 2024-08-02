@@ -6,6 +6,7 @@ import logger, { stream } from '../middleware/winston';
 
 //middlewares
 // import verifyToken from '../middleware/authentication';
+import validator from '../middleware/validator';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -13,12 +14,19 @@ dotenv.config();
 const PORT = process.env.PORT || 8080;
 const app = express();
 export const registerCoreMiddleWare = (): Application => {
-    app.use(morgan('combined', { stream }));
-    app.use(express.json());
-    app.use(cors());
-    app.use(helmet());
+    try {
+        app.use(morgan('combined', { stream }));
+        app.use(express.json());
+        app.use(cors());
+        app.use(helmet());
+        app.use(validator);
 
-    return app;
+        logger.http('Done registering all middlewares');
+        return app;
+    } catch (err) {
+        logger.error('Error thrown while executing registerCoreMiddleWare');
+        process.exit(1);
+    }
 };
 
 const handleError = (): void => {
