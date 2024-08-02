@@ -15,3 +15,10 @@ export interface AuthRequest extends Request {
 export interface RegisterRequest extends Request {
     body: IPGUser;
 }
+
+export interface LoginRequest extends Request {
+    body: {
+        email: string;
+        password: string;
+    };
+}
