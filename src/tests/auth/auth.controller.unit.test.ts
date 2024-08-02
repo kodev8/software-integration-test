@@ -1,8 +1,10 @@
 import { Response } from 'express';
-import userModel from '../../models/userModel';
+import userModel, { IUser } from '../../models/userModel';
 import authController from '../../controllers/auth.controller';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../../types/customRequests.interface';
+import { Session, SessionData } from 'express-session';
 import statusCodes from '../../constants/statusCodes';
 
 jest.mock('../../models/userModel');
@@ -17,6 +19,15 @@ describe('Auth Controller', () => {
     beforeEach(() => {
         req = {
             body: {},
+            session: {
+                user: {
+                    _id: 'mockId',
+                },
+                cookie: {
+                    originalMaxAge: 1000,
+                    expires: new Date('2022-01-01'),
+                },
+            } as Session & SessionData,
         };
 
         res = {
@@ -90,6 +101,118 @@ describe('Auth Controller', () => {
                 email: 'test@example.com',
                 username: 'testuser',
             });
+        });
+    });
+
+    describe('signin', () => {
+        it('should return 400 if missing information', async () => {
+            req.body = {
+                email: 'test123@gmail.com',
+            };
+
+            await authController.signin(req as AuthRequest, res as Response);
+
+            expect(bcrypt.compareSync).not.toHaveBeenCalled();
+            expect(userModel.findOne).not.toHaveBeenCalled();
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'missing information',
+            });
+        });
+
+        it('should return 400 if user not found', async () => {
+            req.body = {
+                email: 'test123@gmail.com',
+                password: 'test',
+            };
+
+            (userModel.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+            await authController.signin(req as AuthRequest, res as Response);
+
+            expect(bcrypt.compareSync).not.toHaveBeenCalled();
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'User not found',
+            });
+        });
+
+        it("should return 400 if email or password don't match", async () => {
+            req.body = {
+                email: 'test123@gmail.com',
+                password: 'wrongpassword',
+            };
+            const mockUser = {
+                _id: 'mockId',
+                email: 'test@example.com',
+                username: 'testuser',
+                password: 'hashedpassword123',
+            };
+
+            (userModel.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+
+            (bcrypt.compareSync as jest.Mock).mockReturnValue(false);
+
+            await authController.signin(req as AuthRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                message: "Email or password don't match",
+            });
+        });
+
+        it('should return 500 if failed to sign in', async () => {
+            req.body = {
+                email: 'test123@gmail.com',
+                password: 'test',
+            };
+
+            (userModel.findOne as jest.Mock).mockRejectedValueOnce(
+                new Error('Failed to get user')
+            );
+            await authController.signin(req as AuthRequest, res as Response);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Failed to get user',
+            });
+        });
+
+        it('should set session and return token', async () => {
+            req.body = {
+                email: 'test123@gmail.com',
+                password: 'test',
+            };
+
+            const mockUser: IUser = {
+                _id: 'mockId',
+                email: 'test123@gmail.com',
+                username: 'test',
+                password: 'hashedpassword123',
+            } as IUser;
+
+            (userModel.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+
+            (bcrypt.compareSync as jest.Mock).mockReturnValue(true);
+            (jwt.sign as jest.Mock).mockReturnValue('mockToken');
+
+            await authController.signin(req as AuthRequest, res as Response);
+
+            expect(bcrypt.compareSync).toHaveBeenCalledWith(
+                'test',
+                'hashedpassword123'
+            );
+            expect(jwt.sign).toHaveBeenCalledWith(
+                { user: { id: 'mockId', email: 'test123@gmail.com' } },
+                process.env.JWT_SECRET_KEY as string,
+                { expiresIn: '1h' }
+            );
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ token: 'mockToken' });
+            expect(req.session.user).toEqual({ _id: 'mockId' });
         });
     });
 });
