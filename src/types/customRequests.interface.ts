@@ -22,3 +22,13 @@ export interface LoginRequest extends Request {
         password: string;
     };
 }
+
+// rating
+export interface AddRatingRequest extends UserRequest {
+    params: {
+        movieId?: string;
+    };
+    body: {
+        rating?: number;
+    };
+}
