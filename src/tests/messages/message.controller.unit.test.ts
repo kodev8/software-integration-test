@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
-import { getMessages, addMessage } from '../../controllers/messages.controller';
+import {
+    getMessages,
+    addMessage,
+    editMessage,
+} from '../../controllers/messages.controller';
 import messageModel, { IMessage } from '../../models/messageModel';
 import statusCodes from '../../constants/statusCodes';
 import { mockMessages } from './message.mockData';
-
+import { EditMessageRequest } from '../../types/customRequests.interface';
 import { Session, SessionData } from 'express-session';
 
 jest.mock('../../models/messageModel');
@@ -112,6 +116,64 @@ describe('Message Controller', () => {
             expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
             expect(res.json).toHaveBeenCalledWith({
                 error: 'You are not authenticated',
+            });
+        });
+    });
+
+    describe('editMessage', () => {
+        it('should update a message', async () => {
+            req.params.messageId = '1';
+            req.body = {
+                name: 'John',
+            };
+
+            (messageModel.findByIdAndUpdate as jest.Mock).mockResolvedValue(
+                mockMessages[1]
+            );
+
+            await editMessage(req as EditMessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith(mockMessages[1]);
+        });
+
+        it('should return 400 if missing information', async () => {
+            req.params.messageId = '1';
+            req.body = {};
+
+            await editMessage(req as EditMessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'missing information',
+            });
+        });
+
+        it('should return 200 even if message not found', async () => {
+            req.params.messageId = '1';
+            req.body = mockMessages[1];
+            (messageModel.findByIdAndUpdate as jest.Mock).mockResolvedValue(
+                null
+            );
+
+            await editMessage(req as EditMessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith(null);
+        });
+
+        it('should handle errors', async () => {
+            req.params.messageId = '1';
+            req.body = mockMessages[1];
+            (messageModel.findByIdAndUpdate as jest.Mock).mockRejectedValue(
+                new Error('Update failed')
+            );
+
+            await editMessage(req as EditMessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Failed to update message',
             });
         });
     });

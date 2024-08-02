@@ -6,6 +6,7 @@ import { registerCoreMiddleWare } from '../../boot/setup';
 import { stableUser1 } from '../users/users.mockData';
 import messageModel, { IMessageResponse } from '../../models/messageModel';
 jest.mock('../../middleware/winston');
+import logger from '../../middleware/winston';
 
 describe('Message Routes', () => {
     let app: Application;
@@ -107,6 +108,73 @@ describe('Message Routes', () => {
                 .set('Authorization', `Bearer ${testToken}`)
                 .send({ message: { name: 'test message' } });
             expect(res.status).toBe(statusCodes.queryError);
+        });
+    });
+
+    describe('PUT /messages/:messageId', () => {
+        it('should edit message by id', async () => {
+            const res = await request(app)
+                .put(`/messages/edit/${instertedMessages[0]._id}`)
+                .set('Authorization', `Bearer ${testToken}`)
+                .send({ name: 'edited message' });
+            expect(res.status).toBe(statusCodes.success);
+
+            expect(Object.keys(res.body)).toEqual(
+                expect.arrayContaining(Object.keys(instertedMessages[0]))
+            );
+
+            expect(res.body).toHaveProperty('user');
+            expect(res.body.user).toBe(instertedMessages[0].user);
+
+            expect(res.body).toHaveProperty('name');
+            expect(res.body.name).toBe('edited message');
+
+            expect(res.body).toHaveProperty('created_at');
+            expect(res.body.created_at).toBe(instertedMessages[0].created_at);
+
+            expect(res.body).toHaveProperty('updated_at');
+            expect(res.body.updated_at).not.toEqual(
+                instertedMessages[0].updated_at
+            );
+        });
+
+        it('should return 400 if fields are missing', async () => {
+            const res = await request(app)
+                .put(`/messages/edit/${instertedMessages[0]._id}`)
+                .set('Authorization', `Bearer ${testToken}`)
+                .send({ name: '' });
+            expect(res.status).toBe(statusCodes.badRequest);
+            expect(res.body).toEqual({ error: 'missing information' });
+        });
+
+        it('should return 200 and null even if message not found (valid object id)', async () => {
+            const res = await request(app)
+                .put(`/messages/edit/66aa2eb4379d1bb76128df00`)
+                .set('Authorization', `Bearer ${testToken}`)
+                .send({ name: 'edited message' });
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual(null);
+        });
+
+        it('should return 500 if message not found (invalid object id)', async () => {
+            const res = await request(app)
+                .put(`/messages/123`)
+                .set('Authorization', `Bearer ${testToken}`)
+                .send({ name: 'edited message' });
+            expect(res.status).toBe(statusCodes.notFound);
+        });
+
+        it('should return 500 if error occurs', async () => {
+            jest.spyOn(messageModel, 'findByIdAndUpdate').mockRejectedValue(
+                new Error('Update failed')
+            );
+            const res = await request(app)
+                .put(`/messages/edit/${instertedMessages[0]._id}`)
+                .set('Authorization', `Bearer ${testToken}`)
+                .send({ name: 'edited message' });
+            expect(res.status).toBe(statusCodes.queryError);
+            expect(res.body).toEqual({ error: 'Failed to update message' });
+            expect(logger.error).toHaveBeenCalled();
         });
     });
 });
