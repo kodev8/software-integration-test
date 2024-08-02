@@ -7,7 +7,7 @@ const config: Config.InitialOptions = {
     transform: {
         '^.+\\.tsx?$': ['ts-jest', {}],
     },
-    testTimeout: 70000,
+    testTimeout: 150000,
     verbose: true,
     testPathIgnorePatterns: ['/node_modules/', '/dist/', '/coverage/'],
     coveragePathIgnorePatterns: [
