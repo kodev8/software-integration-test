@@ -2,7 +2,10 @@ import { Response } from 'express';
 import pool from '../boot/database/db_connect';
 import logger from '../middleware/winston';
 import statusCodes from '../constants/statusCodes';
-import { EditPasswordRequest } from '../types/customRequests.interface';
+import {
+    EditPasswordRequest,
+    UserRequest,
+} from '../types/customRequests.interface';
 
 const editPassword = async (
     req: EditPasswordRequest,
@@ -61,4 +64,12 @@ const editPassword = async (
     }
 };
 
-export { editPassword };
+const logout = async (req: UserRequest, res: Response): Promise<Response> => {
+    if (req.session.user) {
+        delete req.session.user;
+    }
+
+    return res.status(statusCodes.success).json({ message: 'Disconnected' });
+};
+
+export { editPassword, logout };
