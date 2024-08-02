@@ -9,6 +9,9 @@ import {
     dramaMovies,
     moviesAsResp,
     getMoviesSortedByMovieId,
+    getTopRatedMovies,
+    lowestRatedMovie,
+    mockMovies,
 } from './movies.mockData';
 
 import { registerCoreMiddleWare } from '../../boot/setup';
@@ -145,6 +148,42 @@ describe('Movies Routes', () => {
 
             expect(response.status).toBe(statusCodes.success);
             expect(response.body).toEqual({ movies: [] });
+        });
+    });
+
+    describe('GET /movies/top', () => {
+        it('should return top 10 rated movies', async () => {
+            const response = await request(app)
+                .get('/movies/top')
+                .set('Authorization', `Bearer ${testToken}`);
+
+            const topRatedMovies = moviesAsResp(getTopRatedMovies(mockMovies));
+            const lowestRated = lowestRatedMovie(mockMovies);
+
+            expect(poolQuerySpy).toHaveBeenCalledWith(
+                'SELECT * FROM movies ORDER BY rating DESC LIMIT 10;'
+            );
+
+            expect(response.status).toBe(statusCodes.success);
+            expect(response.body).toHaveProperty('movies');
+            expect(getMoviesSortedByMovieId(response.body.movies)).toEqual(
+                getMoviesSortedByMovieId(topRatedMovies)
+            );
+            expect(response.body.movies).not.toContainEqual(lowestRated);
+        });
+
+        it('should return an error when there is a database error', async () => {
+            (logger.error as jest.Mock).mockImplementationOnce(() => {});
+            poolQuerySpy.mockRejectedValueOnce(new Error('Database error'));
+
+            const response = await request(app)
+                .get('/movies/top')
+                .set('Authorization', `Bearer ${testToken}`);
+
+            expect(response.status).toBe(statusCodes.queryError);
+            expect(response.body).toEqual({
+                error: 'Exception occured while fetching top rated movies',
+            });
         });
     });
 });
