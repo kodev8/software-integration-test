@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import {
     getMessages,
+    getMessageById,
     addMessage,
     editMessage,
     deleteMessage,
@@ -54,6 +55,44 @@ describe('Message Controller', () => {
 
             expect(res.status).toHaveBeenCalledWith(statusCodes.success);
             expect(res.json).toHaveBeenCalledWith(mockMessages);
+        });
+    });
+
+    describe('getMessageById', () => {
+        it('should return a message by ID', async () => {
+            req.params.messageId = '1';
+            (messageModel.findById as jest.Mock).mockResolvedValue(mockMessage);
+
+            await getMessageById(req as MessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith(mockMessage);
+        });
+
+        it('should return 404 if message not found', async () => {
+            req.params.messageId = '1';
+            (messageModel.findById as jest.Mock).mockResolvedValue(null);
+
+            await getMessageById(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Message not found',
+            });
+        });
+
+        it('should handle errors', async () => {
+            req.params.messageId = '1';
+            (messageModel.findById as jest.Mock).mockRejectedValue(
+                new Error('Find failed')
+            );
+
+            await getMessageById(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Error while getting message',
+            });
         });
     });
 

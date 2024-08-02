@@ -13,6 +13,28 @@ const getMessages = async (_req: Request, res: Response): Promise<Response> => {
     return res.status(statusCodes.success).json(messages);
 };
 
+const getMessageById = async (
+    req: MessageRequest,
+    res: Response
+): Promise<Response> => {
+    const { messageId } = req.params;
+
+    try {
+        const message: IMessage = await messageModel.findById(messageId);
+        if (!message) {
+            return res
+                .status(statusCodes.notFound)
+                .json({ error: 'Message not found' });
+        }
+        return res.status(statusCodes.success).json(message);
+    } catch (error) {
+        logger.error(error.stack);
+        return res
+            .status(statusCodes.queryError)
+            .json({ error: 'Error while getting message' });
+    }
+};
+
 const addMessage = async (
     req: AddMessageRequest,
     res: Response
@@ -99,4 +121,4 @@ const deleteMessage = async (
     }
 };
 
-export { getMessages, addMessage, editMessage, deleteMessage };
+export { getMessages, getMessageById, addMessage, editMessage, deleteMessage };
