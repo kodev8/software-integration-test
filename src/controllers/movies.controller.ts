@@ -4,6 +4,7 @@ import logger from '../middleware/winston';
 import statusCodes from '../constants/statusCodes';
 import { QueryResult } from 'pg';
 import type { IMovie } from '../types/movie.interface';
+import type { UserRequest } from '../types/customRequests.interface';
 
 export const getMovies = async (
     req: Request,
@@ -73,5 +74,23 @@ export const getTopRatedMovies = async (
         return res.status(statusCodes.queryError).json({
             error: 'Exception occured while fetching top rated movies',
         });
+    }
+};
+
+export const getSeenMovies = async (
+    req: UserRequest,
+    res: Response
+): Promise<Response> => {
+    try {
+        const movies: QueryResult = await pool.query(
+            'SELECT * FROM seen_movies S JOIN movies M ON S.movie_id = M.movie_id WHERE email = $1;',
+            [req.user.email]
+        );
+        return res.status(statusCodes.success).json({ movies: movies.rows });
+    } catch (error) {
+        logger.error(error.stack);
+        return res
+            .status(statusCodes.queryError)
+            .json({ error: 'Exception occured while fetching seen movies' });
     }
 };
