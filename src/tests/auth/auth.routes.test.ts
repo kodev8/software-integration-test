@@ -117,4 +117,80 @@ describe('Auth Routes', () => {
             expect(res.body).toEqual({ token: expect.any(String) });
         });
     });
+
+    describe('GET /me', () => {
+        it('should return 401 if not authenticated', async () => {
+            const res = await request(app).get('/auth/me');
+            expect(res.status).toBe(statusCodes.unauthorized);
+            expect(res.body).toEqual({ error: 'You are not authenticated' });
+        });
+
+        it('should return 400 if user not found', async () => {
+            // await request(app).post('/auth/signup').send(testUserSignup);
+            const loginRes = await request(app)
+                .post('/auth/login')
+                .send(mockUser1);
+
+            const cookies = loginRes.headers['set-cookie'];
+
+            const mockFindById = jest.fn().mockReturnValue({
+                populate: jest.fn().mockResolvedValue(null),
+            });
+
+            jest.spyOn(UserModel, 'findById').mockImplementation(mockFindById);
+
+            const res = await request(app)
+                .get('/auth/me')
+                .set('Cookie', cookies);
+
+            expect(res.status).toBe(statusCodes.badRequest);
+            expect(res.body).toEqual({ message: 'User not found' });
+        });
+
+        it('should return 500 if failed to get user', async () => {
+            // await request(app).post('/auth/signup').send(testUserSignup);
+            const loginRes = await request(app)
+                .post('/auth/login')
+                .send(mockUser1);
+            const cookies = loginRes.headers['set-cookie'];
+            const mockFindById = jest.fn().mockReturnValue({
+                populate: jest
+                    .fn()
+                    .mockRejectedValue(new Error('Failed to get user')),
+            });
+
+            jest.spyOn(UserModel, 'findById').mockImplementation(mockFindById);
+            const res = await request(app)
+                .get('/auth/me')
+                .set('Cookie', cookies?.[0]);
+            expect(res.status).toBe(statusCodes.queryError);
+            expect(res.body).toEqual({ error: 'Failed to get user' });
+        });
+
+        it('should return 200 and user', async () => {
+            // Log in the user
+            const loginRes = await request(app)
+                .post('/auth/login')
+                .send(mockUser1);
+
+            expect(loginRes.status).toBe(statusCodes.success);
+
+            const cookies = loginRes.headers['set-cookie'];
+            // Fetch the user
+            const res = await request(app)
+                .get('/auth/me')
+                .set('Cookie', cookies?.[0]);
+
+            expect(res.status).toBe(statusCodes.success);
+            expect(res.body).toEqual({
+                __v: expect.any(Number),
+                _id: expect.any(String),
+                created_at: expect.any(String),
+                email: mockUser1.email,
+                messages: [],
+                updated_at: expect.any(String),
+                username: mockUser1.username,
+            });
+        });
+    });
 });

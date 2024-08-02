@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import userModel, { IUser } from '../../models/userModel';
 import authController from '../../controllers/auth.controller';
 import bcrypt from 'bcryptjs';
@@ -213,6 +213,65 @@ describe('Auth Controller', () => {
             expect(res.status).toHaveBeenCalledWith(statusCodes.success);
             expect(res.json).toHaveBeenCalledWith({ token: 'mockToken' });
             expect(req.session.user).toEqual({ _id: 'mockId' });
+        });
+    });
+
+    describe('getUser', () => {
+        it('should return 401 if not authenticated', async () => {
+            req.session.user = undefined;
+
+            await authController.getUser(req as Request, res as Response);
+
+            expect(userModel.findById).not.toHaveBeenCalled();
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.unauthorized);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'You are not authenticated',
+            });
+        });
+
+        it('should return 400 if user is not found', async () => {
+            (userModel.findById as jest.Mock).mockReturnValueOnce({
+                populate: jest.fn().mockResolvedValueOnce(null),
+            });
+
+            await authController.getUser(req as AuthRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'User not found',
+            });
+        });
+
+        it('should return 500 if failed to get user', async () => {
+            (userModel.findById as jest.Mock).mockReturnValueOnce({
+                populate: jest
+                    .fn()
+                    .mockRejectedValueOnce(new Error('Failed to get user')),
+            });
+
+            await authController.getUser(req as AuthRequest, res as Response);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Failed to get user',
+            });
+        });
+
+        it('should return 200 and the user', async () => {
+            const mockUser: IUser = {
+                _id: 'mockId',
+                email: 'test@example.com',
+                username: 'testuser',
+                password: 'hashedpassword123',
+                messages: [],
+            } as IUser;
+            (userModel.findById as jest.Mock).mockReturnValueOnce({
+                populate: jest.fn().mockResolvedValueOnce(mockUser),
+            });
+
+            await authController.getUser(req as AuthRequest, res as Response);
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith(mockUser);
         });
     });
 });

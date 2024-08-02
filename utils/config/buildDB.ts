@@ -2,15 +2,18 @@ import { stableUser1, stableUser2 } from '../../src/tests/users/users.mockData';
 import bcrypt from 'bcryptjs';
 import logger from '../../src/middleware/winston';
 import mongoose from 'mongoose';
+import messageModel from '../../src/models/messageModel';
 
 import userModel, { IUserDocument } from '../../src/models/userModel';
 
 interface IExpectedBuildDB {
     users?: boolean;
+    messages?: boolean;
 }
 
 export const buildDB = async ({
     users = false,
+    messages = false,
 }: IExpectedBuildDB): Promise<void> => {
     if (users) {
         const stableUsers = [stableUser1, stableUser2];
@@ -26,6 +29,12 @@ export const buildDB = async ({
 
             const newUser = await userObj.save();
             users.push(newUser);
+        }
+
+        // message MODEL
+        if (messages) {
+            // clear messages
+            await messageModel.deleteMany({});
         }
     }
 };
