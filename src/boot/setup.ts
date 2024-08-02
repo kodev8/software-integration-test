@@ -7,6 +7,7 @@ import logger, { stream } from '../middleware/winston';
 //middlewares
 // import verifyToken from '../middleware/authentication';
 import validator from '../middleware/validator';
+import healthCeck from '../middleware/healthCheck';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -20,6 +21,7 @@ export const registerCoreMiddleWare = (): Application => {
         app.use(cors());
         app.use(helmet());
         app.use(validator);
+        app.use(healthCeck);
 
         logger.http('Done registering all middlewares');
         return app;
