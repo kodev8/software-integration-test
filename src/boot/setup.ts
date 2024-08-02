@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import logger, { stream } from '../middleware/winston';
+import mongoose from 'mongoose';
+
+//routes
+import authRoutes from '../routes/auth.routes';
 
 //middlewares
 // import verifyToken from '../middleware/authentication';
@@ -15,6 +19,14 @@ dotenv.config();
 
 const PORT = process.env.PORT || 8080;
 const app = express();
+
+try {
+    mongoose.connect(process.env.MONGO_URI);
+    logger.info('MongoDB Connected');
+} catch (error) {
+    logger.error('Error connecting to DB' + error);
+}
+
 export const registerCoreMiddleWare = (): Application => {
     try {
         app.use(morgan('combined', { stream }));
@@ -23,6 +35,9 @@ export const registerCoreMiddleWare = (): Application => {
         app.use(helmet());
         app.use(validator);
         app.use(healthCeck);
+
+        app.use('/auth', authRoutes);
+
         app.use(notFound);
 
         logger.http('Done registering all middlewares');
