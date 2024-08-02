@@ -8,10 +8,10 @@ export interface AuthRequest extends Request {
     password: string;
 }
 
-// uses
 export interface RegisterRequest extends Request {
     body: IPGUser;
 }
+
 
 export interface LoginRequest extends Request {
     body: {
@@ -26,13 +26,6 @@ export interface UserRequest extends Request {
     };
 }
 
-// profile
-export interface EditPasswordRequest extends UserRequest {
-    body: {
-        oldPassword?: string;
-        newPassword?: string;
-    };
-}
 
 // rating
 export interface AddRatingRequest extends UserRequest {
