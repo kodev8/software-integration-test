@@ -3,11 +3,15 @@ import {
     getMessages,
     addMessage,
     editMessage,
+    deleteMessage,
 } from '../../controllers/messages.controller';
 import messageModel, { IMessage } from '../../models/messageModel';
 import statusCodes from '../../constants/statusCodes';
 import { mockMessages } from './message.mockData';
-import { EditMessageRequest } from '../../types/customRequests.interface';
+import {
+    EditMessageRequest,
+    MessageRequest,
+} from '../../types/customRequests.interface';
 import { Session, SessionData } from 'express-session';
 
 jest.mock('../../models/messageModel');
@@ -174,6 +178,62 @@ describe('Message Controller', () => {
             expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
             expect(res.json).toHaveBeenCalledWith({
                 error: 'Failed to update message',
+            });
+        });
+    });
+
+    describe('deleteMessage', () => {
+        it('should return 400 if missing information', async () => {
+            req.params.messageId = undefined;
+
+            await deleteMessage(req as MessageRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'missing information',
+            });
+        });
+
+        it('should delete a message', async () => {
+            req.params.messageId = '1';
+
+            (messageModel.findByIdAndDelete as jest.Mock).mockResolvedValue(
+                '1'
+            );
+
+            await deleteMessage(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'Message deleted',
+            });
+        });
+
+        it('should return 200 even if message not found', async () => {
+            req.params.messageId = '1';
+            (messageModel.findByIdAndDelete as jest.Mock).mockResolvedValue(
+                null
+            );
+
+            await deleteMessage(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'Message deleted',
+            });
+        });
+
+        it('should handle errors', async () => {
+            req.params.messageId = '1';
+            (messageModel.findByIdAndDelete as jest.Mock).mockRejectedValue(
+                new Error('Delete failed')
+            );
+
+            await deleteMessage(req as Request, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Failed to delete message',
             });
         });
     });
