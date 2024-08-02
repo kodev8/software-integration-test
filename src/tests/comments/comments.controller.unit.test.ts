@@ -1,5 +1,8 @@
 import { Response } from 'express';
-import { addComment } from '../../controllers/comments.controller';
+import {
+    addComment,
+    getCommentsById,
+} from '../../controllers/comments.controller';
 import statusCodes from '../../constants/statusCodes';
 import {
     excessRatingComment,
@@ -113,6 +116,59 @@ describe('Comment Controller', () => {
             expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
             expect(res.json).toHaveBeenCalledWith({
                 error: 'Exception occurred while adding comment',
+            });
+        });
+    });
+
+    describe('getCommentsById controller', () => {
+        it('should return 400 if movie_id is missing or invalid', async () => {
+            req.params.movie_id = 'abc';
+            await getCommentsById(req as CommentRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.badRequest);
+            expect(res.json).toHaveBeenCalledWith({
+                message: 'movie id missing',
+            });
+        });
+
+        it('should return comments and status 200', async () => {
+            req.params.movie_id = mockComments[0].movie_id.toString();
+
+            (commentModel.find as jest.Mock).mockResolvedValue(mockComments);
+
+            await getCommentsById(req as CommentRequest, res as Response);
+
+            expect(commentModel.find).toHaveBeenCalledWith({
+                movie_id: mockComments[0].movie_id,
+            });
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ comments: mockComments });
+        });
+
+        it('should return an empty array if no comments are found', async () => {
+            req.params.movie_id = '100';
+
+            (commentModel.find as jest.Mock).mockResolvedValue([]);
+
+            await getCommentsById(req as CommentRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.success);
+            expect(res.json).toHaveBeenCalledWith({ comments: [] });
+        });
+
+        it('should handle errors and return 500', async () => {
+            req.params.movie_id = '1';
+
+            (commentModel.find as jest.Mock).mockRejectedValue(
+                new Error('Find failed')
+            );
+
+            await getCommentsById(req as CommentRequest, res as Response);
+
+            expect(res.status).toHaveBeenCalledWith(statusCodes.queryError);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Exception occurred while fetching comments',
             });
         });
     });
